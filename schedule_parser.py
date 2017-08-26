@@ -19,11 +19,11 @@ class scheduleParser(object):
     # 0 50-57 6,12 1-3 3,4,6
     __schedule = OrderedDict(
         [
-            ("second", range(0, 60)),
-            ("minute", [50,55,56,57]),
-            ("hour", [6,12]),
-            ("day", [1,2,3]),
-            ("month", [3,4,6]),
+            ("second", range(0, 1)),
+            ("minute", range(0, 1)),
+            ("hour", range(0, 24)),
+            ("day", range(1, 31+1)),
+            ("month", range(1, 12+1)),
             ("year", range(2017, 2020+1)),
         ]
     )
@@ -31,12 +31,12 @@ class scheduleParser(object):
     def __init__(self, base_date = datetime.datetime.now()):
         self.base_date = base_date
 
-    def incr_counter(self):
+    def incr_counter(self, idx=0):
         """
-        increment counter based on possible value len 
+        increment counter at index 
+        this function is based on possible array len
         """
-        idx = 0
-        for key, val in self.__schedule.items():
+        for key, val in self.__schedule.items()[idx::]:
             current_count = self.__schedule_counter[idx] 
             current_count +=1
             # detect the end of array 
@@ -61,7 +61,17 @@ class scheduleParser(object):
         self.incr_counter()
         # force microsecond to 0 
         tmp['microsecond'] = 0
-        ret = self.base_date.replace(**tmp)
+        try :
+            ret = self.base_date.replace(**tmp)
+            # ValueError: day is out of range for month
+        except ValueError as e:
+            if str(e) == "day is out of range for month":
+                # return next object 
+                # TODO manage that case by calculation
+                self.incr_counter(idx=3)
+                return self.get_next()
+            else :
+                raise e
         #print(ret)
         #print(self.__schedule_counter, self.__counter_idx)
         return ret
