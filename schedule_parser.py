@@ -5,6 +5,9 @@ Psedo crontab parser & calculator
 import datetime
 from collections import OrderedDict
 
+# TODO parse args 
+import sys
+
 class scheduleParser(object):
     """
     Use aritmetic to calculate possible dates from psedo cron format string   
@@ -16,11 +19,12 @@ class scheduleParser(object):
     __schedule_counter = [0, 0, 0, 0, 0, 0]
     
     
-    # 0 50-57 6,12 1-3 3,4,6
+    # default schedule to overwrite
+    # * * * * * * 
     __schedule = OrderedDict(
         [
-            ("second", range(0, 1)),
-            ("minute", range(0, 1)),
+            ("second", range(0, 60)),
+            ("minute", range(0, 60)),
             ("hour", range(0, 24)),
             ("day", range(1, 31+1)),
             ("month", range(1, 12+1)),
@@ -28,15 +32,91 @@ class scheduleParser(object):
         ]
     )
     
-    def __init__(self, base_date = datetime.datetime.now()):
+    schedule = __schedule.copy()
+
+    def __init__(self, cron_string, base_date = datetime.datetime.now()):
         self.base_date = base_date
+        self.parse_string(cron_string)
+    
+    def __atoi(self, a):
+        return int(a, 10)
+    
+    def __is_possible_value(self, value, idx):
+        """
+        check f a number is a possible value fot the schedule idx 
+        """
+        return value in self.__schedule.values()[idx]
+
+    def parse_range(self, exp, idx):
+        """
+        read a-b expression
+        
+        it read only extarnals objects delimited by '-'
+        'a-b-c-z' will retrun the range a-z
+        '1-6-8-100-3' returns [1,2,3]
+        all middle values are discared 
+        """
+        elements = exp.split("-")
+        a = self.__atoi(elements[0])
+        b = self.__atoi(elements[-1])
+        if self.__is_possible_value(a, idx) and self.__is_possible_value(b, idx):
+            if a < b:
+                return range(a, b+1)
+            else :
+                return range(b, a+1)
+        else :
+            raise Exception("value out of range {}".format(exp))
+
+    def parse_element(self, element_sring, idx):
+        """
+        build a sorted array from string
+        """
+        ret = []
+        sub_element = element_sring.split(",")
+        for sub in sub_element:
+            # basic switch case 
+            if '-' in sub :
+                ret += self.parse_range(sub, idx)
+            elif '/' in sub:
+                raise Exception("/ is not inplemented yet")
+            elif '*' == sub:
+                return self.__schedule.values()[idx]
+            else :
+                # default case
+                i = self.__atoi(sub)
+                if self.__is_possible_value(i, idx):
+                    ret.append(i)
+                else :
+                    raise Exception("value out of range {}".format(sub))
+        return sorted(ret)
+
+
+    def parse_string(self, psedo_cron):
+        """/
+        String parsing entrie point
+        It split the global sring into small chunks of elements
+        '0 1-6,9 * * * '
+        """
+        # I use simple(naive) parsing to ease translation in low level language  
+        # maybe a future implementation based on C
+        
+        # split on space char 
+        cron_array = psedo_cron.strip().split(" ")
+        if len(cron_array) != 6:
+            raise Exception("wrong nember of element provided {}".format(cron_array))
+        for idx in range(0, len(cron_array)):
+            values = self.parse_element(cron_array[idx], idx)
+            key = self.schedule.keys()[idx]
+            self.schedule[key] = values
+        
+        print(self.schedule)
 
     def incr_counter(self, idx=0):
         """
         increment counter at index 
         this function is based on possible array len
         """
-        for key, val in self.__schedule.items()[idx::]:
+        for key, val in self.schedule.items()[idx::]:
             current_count = self.__schedule_counter[idx] 
             current_count +=1
             # detect the end of array 
@@ -54,7 +134,7 @@ class scheduleParser(object):
     def get_next(self):
         tmp = {}
         idx = 0
-        for key, val in self.__schedule.items() :
+        for key, val in self.schedule.items() :
             v_idx = self.__schedule_counter[idx]
             tmp[key] = val[v_idx % len(val)]
             idx += 1
@@ -76,16 +156,19 @@ class scheduleParser(object):
         #print(self.__schedule_counter, self.__counter_idx)
         return ret
 
-t = scheduleParser()
-c = 0
-a = []
-while True:
-    c+=1
-    d = t.get_next()
-    print(d)
-    if d not in a:
-        a.append(d)
-    else :
-        print("Duplicated date detected, global count {}".format(c))
-        exit(1)
-    
+def main():
+    t = scheduleParser(sys.argv[1])
+    c = 0
+    a = []
+    while True:
+        c+=1
+        d = t.get_next()
+        print(d)
+        if d not in a:
+            a.append(d)
+        else :
+            print("Duplicated date detected, global count {}".format(c))
+            exit(1)
+
+if __name__ == "__main__":
+    main()    
