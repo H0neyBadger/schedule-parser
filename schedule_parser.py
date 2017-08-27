@@ -29,6 +29,7 @@ class scheduleParser(object):
             ("day", range(1, 31+1)),
             ("month", range(1, 12+1)),
             ("year", range(2017, 2020+1)),
+            ("isoweekday", range(0, 7+1)), 
         ]
     )
     
@@ -102,7 +103,7 @@ class scheduleParser(object):
         
         # split on space char 
         cron_array = psedo_cron.strip().split(" ")
-        if len(cron_array) != 6:
+        if len(cron_array) != 7:
             raise Exception("wrong nember of element provided {}".format(cron_array))
         for idx in range(0, len(cron_array)):
             values = self.parse_element(cron_array[idx], idx)
@@ -116,7 +117,11 @@ class scheduleParser(object):
         increment counter at index 
         this function is based on possible array len
         """
-        for key, val in self.schedule.items()[idx::]:
+        # start at index 
+        # remove last index
+        s = self.schedule.copy()
+        isoweekdays = s.pop("isoweekday")
+        for key, val in s.items()[idx::]:
             current_count = self.__schedule_counter[idx] 
             current_count +=1
             # detect the end of array 
@@ -134,7 +139,10 @@ class scheduleParser(object):
     def get_next(self):
         tmp = {}
         idx = 0
-        for key, val in self.schedule.items() :
+        s = self.schedule.copy()
+        isoweekdays = s.pop("isoweekday")
+        # read all schedule except isoweekday
+        for key, val in s.items():
             v_idx = self.__schedule_counter[idx]
             tmp[key] = val[v_idx % len(val)]
             idx += 1
@@ -143,6 +151,9 @@ class scheduleParser(object):
         tmp['microsecond'] = 0
         try :
             ret = self.base_date.replace(**tmp)
+            if ret.isoweekday() not in isoweekdays:
+                self.incr_counter(idx=3)
+                return self.get_next()
             # ValueError: day is out of range for month
         except ValueError as e:
             if str(e) == "day is out of range for month":
@@ -165,7 +176,7 @@ def dummy_run(schedule):
     while True:
         d = t.get_next()
         if d not in a:
-            print(d)
+            print(d.strftime("%A, %d. %B %Y %I:%M%p"))
             a.append(d)
         else :
             # print("Duplicated date detected, global count {}".format(c))
