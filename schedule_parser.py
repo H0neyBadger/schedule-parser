@@ -3,10 +3,10 @@ Psedo crontab parser & calculator
 """
 
 import datetime
+import argparse
+
 from collections import OrderedDict
 
-# TODO parse args 
-import sys
 
 class scheduleParser(object):
     """
@@ -109,7 +109,7 @@ class scheduleParser(object):
             key = self.schedule.keys()[idx]
             self.schedule[key] = values
         
-        print(self.schedule)
+        #print(self.schedule)
 
     def incr_counter(self, idx=0):
         """
@@ -156,19 +156,29 @@ class scheduleParser(object):
         #print(self.__schedule_counter, self.__counter_idx)
         return ret
 
-def main():
-    t = scheduleParser(sys.argv[1])
+
+
+def dummy_run(schedule):
+    t = scheduleParser(schedule)
     c = 0
     a = []
     while True:
-        c+=1
         d = t.get_next()
-        print(d)
         if d not in a:
+            print(d)
             a.append(d)
         else :
-            print("Duplicated date detected, global count {}".format(c))
-            exit(1)
+            # print("Duplicated date detected, global count {}".format(c))
+            break
+
+        c+=1
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('schedule', nargs=1, help="Psedo cron format string")
+    args = parser.parse_args()
+    for s in args.schedule:
+        dummy_run(s)
 
 if __name__ == "__main__":
     main()    
