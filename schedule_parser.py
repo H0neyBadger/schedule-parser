@@ -136,37 +136,58 @@ class scheduleParser(object):
                 return True
             idx += 1
     
-    def get_next(self):
-        tmp = {}
-        idx = 0
-        s = self.schedule.copy()
-        isoweekdays = s.pop("isoweekday")
-        # read all schedule except isoweekday
-        for key, val in s.items():
-            v_idx = self.__schedule_counter[idx]
-            tmp[key] = val[v_idx % len(val)]
-            idx += 1
-        #self.incr_counter()
-        # force microsecond to 0 
-        tmp['microsecond'] = 0
-        try :
-            ret = self.base_date.replace(**tmp)
-            if ret.isoweekday() not in isoweekdays:
-                self.incr_counter(idx=3)
-                return self.get_next()
-            else :
-                self.incr_counter()
-            # ValueError: day is out of range for month
-        except ValueError as e:
-            if str(e) == "day is out of range for month":
-                # return next object 
-                # TODO manage that case by calculation
-                self.incr_counter(idx=3)
-                return self.get_next()
-            else :
-                raise e
-        #print(ret)
-        #print(self.__schedule_counter, self.__counter_idx)
+    def get_next(self, limit=9999):
+        c = 0
+        while c<limit:
+            c += 1
+            tmp = {}
+            idx = 0
+            s = self.schedule.copy()
+            isoweekdays = s.pop("isoweekday")
+            # read all schedule except isoweekday
+            for key, val in s.items():
+                v_idx = self.__schedule_counter[idx]
+                tmp[key] = val[v_idx % len(val)]
+                idx += 1
+            tmp['microsecond'] = 0
+            try :
+                ret = self.base_date.replace(**tmp)
+                delta = (self.base_date - ret ).total_seconds()
+                # print(delta, ret, self.base_date)
+                if delta > 2678400:
+                    # roll next month (delta > 31 days)
+                    self.incr_counter(idx=4)
+                    continue
+                elif delta > 86400:
+                    # roll next day 
+                    self.incr_counter(idx=3)
+                    continue
+                elif ret.isoweekday() not in isoweekdays:
+                    self.incr_counter(idx=3)
+                    continue
+                elif delta > 3600:
+                    # roll next hour
+                    self.incr_counter(idx=2)
+                    continue
+                elif delta > 60:
+                    # roll next minute
+                    self.incr_counter(idx=1)
+                    continue
+                else :
+                    self.incr_counter()
+                    # date found -> return current datetime object
+                    break
+                # ValueError: day is out of range for month
+            except ValueError as e:
+                if str(e) == "day is out of range for month":
+                    # return next object 
+                    # TODO manage that case by calculation
+                    self.incr_counter(idx=3)
+                    continue
+                else :
+                    raise e
+            #print(ret)
+            #print(self.__schedule_counter, self.__counter_idx)
         return ret
 
 
