@@ -146,7 +146,7 @@ class scheduleParser(object):
             v_idx = self.__schedule_counter[idx]
             tmp[key] = val[v_idx % len(val)]
             idx += 1
-        self.incr_counter()
+        #self.incr_counter()
         # force microsecond to 0 
         tmp['microsecond'] = 0
         try :
@@ -154,6 +154,8 @@ class scheduleParser(object):
             if ret.isoweekday() not in isoweekdays:
                 self.incr_counter(idx=3)
                 return self.get_next()
+            else :
+                self.incr_counter()
             # ValueError: day is out of range for month
         except ValueError as e:
             if str(e) == "day is out of range for month":
