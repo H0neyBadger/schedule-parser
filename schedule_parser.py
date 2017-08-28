@@ -28,7 +28,7 @@ class scheduleParser(object):
             ("hour", range(0, 24)),
             ("day", range(1, 31+1)),
             ("month", range(1, 12+1)),
-            ("year", range(2017, 2020+1)),
+            ("year", range(2000, 3000+1)),
             ("isoweekday", range(0, 7+1)), 
         ]
     )
@@ -46,7 +46,7 @@ class scheduleParser(object):
         """
         check f a number is a possible value fot the schedule idx 
         """
-        return value in self.__schedule.values()[idx]
+        return value in list(self.__schedule.values())[idx]
 
     def parse_range(self, exp, idx):
         """
@@ -81,7 +81,7 @@ class scheduleParser(object):
             elif '/' in sub:
                 raise Exception("/ is not inplemented yet")
             elif '*' == sub:
-                return self.__schedule.values()[idx]
+                return list(self.__schedule.values())[idx]
             else :
                 # default case
                 i = self.__atoi(sub)
@@ -107,7 +107,7 @@ class scheduleParser(object):
             raise Exception("wrong nember of element provided {}".format(cron_array))
         for idx in range(0, len(cron_array)):
             values = self.parse_element(cron_array[idx], idx)
-            key = self.schedule.keys()[idx]
+            key = list(self.schedule.keys())[idx]
             self.schedule[key] = values
         
         #print(self.schedule)
@@ -121,7 +121,7 @@ class scheduleParser(object):
         # remove last index
         s = self.schedule.copy()
         isoweekdays = s.pop("isoweekday")
-        for key, val in s.items()[idx::]:
+        for key, val in list(s.items())[idx::]:
             current_count = self.__schedule_counter[idx] 
             current_count +=1
             # detect the end of array 
